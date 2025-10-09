@@ -11,6 +11,7 @@ import Header from '@edx/frontend-component-header';
 import { FooterSlot } from '@edx/frontend-component-footer';
 import messages from './i18n';
 import ExamplePage from './example/ExamplePage';
+import MessengerContent from './messenger/MessengerContent';
 
 import './index.scss';
 
@@ -18,7 +19,7 @@ subscribe(APP_READY, () => {
   ReactDOM.render(
     <AppProvider>
       <Header />
-      <ExamplePage />
+      <MessengerContent />
       <FooterSlot />
     </AppProvider>,
     document.getElementById('root'),
