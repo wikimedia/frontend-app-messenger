@@ -1,31 +1,95 @@
-import React from 'react';
+// components/Inbox.jsx
+import React, { useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useIntl } from '@edx/frontend-platform/i18n';
+import { useDispatch, useSelector } from 'react-redux';
 import Spinner from '../assets/spinner';
 import messages from './messages';
+import {
+  fetchInboxList,
+  setSelectedUser,
+  setSearchQuery,
+  incrementPageNumber,
+  resetPageNumber,
+} from '../store/slices/inboxSlice';
+import { resetMessages } from '../store/slices/messagesSlice';
 
-const Inbox = ({
-  inboxList,
-  lastInboxRef,
-  inboxLoading,
-  setSelectedInboxUser,
-  selectedInboxUser,
-  isDrawerShown,
-  setDrawerShown,
-  searchInbox,
-  setSearchInbox,
-}) => {
+const Inbox = ({ isDrawerShown, setDrawerShown }) => {
   const intl = useIntl();
+  const dispatch = useDispatch();
+  const observer = useRef();
 
-  const handleInboxClick = (event) => {
-    setSelectedInboxUser(event.currentTarget.dataset.user);
+  const {
+    list: inboxList,
+    selectedUser,
+    loading,
+    hasMore,
+    pageNumber,
+    searchQuery,
+  } = useSelector((state) => state.inbox);
+
+  // Fetch initial inbox list
+  useEffect(() => {
+    dispatch(fetchInboxList({ pageNumber: 1, searchQuery: '' }));
+  }, [dispatch]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    if (searchQuery !== '') {
+      const delayDebounceFetch = setTimeout(() => {
+        dispatch(resetPageNumber());
+        dispatch(fetchInboxList({ pageNumber: 1, searchQuery }));
+      }, 500);
+
+      return () => clearTimeout(delayDebounceFetch);
+    } if (searchQuery === '' && pageNumber === 1) {
+      dispatch(fetchInboxList({ pageNumber: 1, searchQuery: '' }));
+    }
+  }, [searchQuery, dispatch]);
+
+  // Handle pagination
+  useEffect(() => {
+    if (pageNumber > 1) {
+      dispatch(fetchInboxList({ pageNumber, searchQuery }));
+    }
+  }, [pageNumber, dispatch]);
+
+  // Intersection Observer for infinite scroll
+  const lastInboxRef = useCallback(
+    (node) => {
+      if (loading) { return; }
+      if (observer.current) { observer.current.disconnect(); }
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          dispatch(incrementPageNumber());
+        }
+      });
+
+      if (node) { observer.current.observe(node); }
+    },
+    [loading, hasMore, dispatch],
+  );
+
+  const handleInboxClick = (username) => {
+    dispatch(setSelectedUser(username));
+    dispatch(resetMessages());
     setDrawerShown(!isDrawerShown);
+  };
+
+  const handleSearchChange = (e) => {
+    dispatch(setSearchQuery(e.target.value));
+  };
+
+  const handleClearSearch = () => {
+    dispatch(setSearchQuery(''));
   };
 
   const renderDate = (dateStr) => {
     const date = new Date(dateStr).toDateString();
     const today = new Date().toDateString();
-    const yesterday = (new Date(Date.now() - 86400000)).toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+
     if (today === date) { return 'Today'; }
     if (yesterday === date) { return 'Yesterday'; }
     return dateStr;
@@ -35,112 +99,98 @@ const Inbox = ({
     <div className="chat-sidebar">
       <div className="chat-sidebar-header">
         <div className="btn-box">
-          <strong className="text">{intl.formatMessage(messages['messenger.label.inbox'])}</strong>
+          <strong className="text">
+            {intl.formatMessage(messages['messenger.label.inbox'])}
+          </strong>
           <button
             className="btn btn-primary btn-lg start-new-msg-btn"
             data-toggle="modal"
             data-target="#messageModalCenter"
           >
-            <span className="icon-plus">+</span>{intl.formatMessage(messages['messenger.button.newMessage'])}
+            <span className="icon-plus">+</span>
+            {intl.formatMessage(messages['messenger.button.newMessage'])}
           </button>
         </div>
         <div className="search-box">
           <span className="fa fa-search" />
           <input
             type="text"
-            value={searchInbox}
-            onChange={(e) => setSearchInbox(e.target.value)}
+            value={searchQuery}
+            onChange={handleSearchChange}
             className="search-field"
             placeholder={intl.formatMessage(messages['messenger.placeholder.searchUsers'])}
           />
-          {
-            searchInbox && (
-            <span
-              className="fa fa-times-circle"
-              onClick={() => { setSearchInbox(''); }}
-            />
-            )
-                    }
+          {searchQuery && (
+            <span className="fa fa-times-circle" onClick={handleClearSearch} />
+          )}
         </div>
         <span
           className="fa fa-cog"
-          onClick={() => { setDrawerShown(!isDrawerShown); }}
+          onClick={() => setDrawerShown(!isDrawerShown)}
         />
       </div>
       <ul className="inbox-list">
-        {
-                    inboxLoading && (
-                    <Spinner />
-                    )
-                }
-        {
-                    (!inboxList) ? <span>{intl.formatMessage(messages['messenger.inbox.noConversation'])}</span>
-                      : inboxList.map(
-                        (inbox, index) => {
-                          const setRef = (inboxList.length === index + 1);
-                          const name = (selectedInboxUser === inbox.with_user)
-                            ? 'inbox-message active' : 'inbox-message';
-                          const unreadClass = inbox.unread_count ? 'unread' : '';
-                          const hasProfileImage = inbox.with_user_img.indexOf('default_50') === -1;
-                          const profileName = `${inbox.with_user[0]}${inbox.with_user.split(' ')[1]
-                            ? inbox.with_user.split(' ')[1][0] : inbox.with_user[1]}`;
-                          return (
-                            <li
-                              key={index}
-                              data-user={inbox.with_user}
-                              className={`${name} ${unreadClass}`}
-                              ref={setRef ? lastInboxRef : null}
-                              onClick={(e) => handleInboxClick(e)}
-                            >
-                              {
-                                        hasProfileImage
-                                          ? (<img src={inbox.with_user_img} alt={inbox.with_user} />)
-                                          : (
-                                            <span
-                                              className="img-placeholder"
-                                              style={{ background: '#a7f9e0' }}
-                                            >
-                                              {profileName}
-                                            </span>
-                                          )
-                                    }
-                              <div className="about">
-                                <div className="title">
-                                  <span className="date">{renderDate(inbox.last_message_date)}</span>
-                                  <span className="name">{inbox.with_user}</span>
-                                </div>
-                              </div>
-                              <span className="badge rounded-pill bg-danger unread-count">
-                                {inbox.unread_count ? inbox.unread_count : ''}
-                              </span>
-                            </li>
-                          );
-                        },
-                      )
-                }
+        {loading && pageNumber === 1 && <Spinner />}
+        {!inboxList.length && !loading ? (
+          <span>{intl.formatMessage(messages['messenger.inbox.noConversation'])}</span>
+        ) : (
+          inboxList.map((inbox, index) => {
+            const username = inbox.with_user || inbox.withUser;
+
+            // Skip if no username
+            if (!username) { return null; }
+
+            const isLastItem = inboxList.length === index + 1;
+            const isActive = selectedUser === username;
+            const unreadClass = inbox.unread_count ? 'unread' : '';
+            const hasProfileImage = inbox.with_user_img?.indexOf('default_50') === -1;
+
+            // Generate initials - simple and safe
+            const getInitials = (name) => {
+              const parts = name.split(' ');
+              if (parts.length >= 2) {
+                return (parts[0][0] + parts[1][0]).toUpperCase();
+              }
+              return (name[0] + (name[1] || name[0])).toUpperCase();
+            };
+
+            const profileName = getInitials(username);
+
+            return (
+              <li
+                key={inbox.id}
+                className={`inbox-message ${isActive ? 'active' : ''} ${unreadClass}`}
+                ref={isLastItem ? lastInboxRef : null}
+                onClick={() => handleInboxClick(inbox.with_user)}
+              >
+                {hasProfileImage ? (
+                  <img src={inbox.with_user_img} alt={inbox.with_user} />
+                ) : (
+                  <span className="img-placeholder" style={{ background: '#a7f9e0' }}>
+                    {profileName}
+                  </span>
+                )}
+                <div className="about">
+                  <div className="title">
+                    <span className="date">{renderDate(inbox.last_message_date)}</span>
+                    <span className="name">{inbox.with_user}</span>
+                  </div>
+                </div>
+                <span className="badge rounded-pill bg-danger unread-count">
+                  {inbox.unread_count || ''}
+                </span>
+              </li>
+            );
+          })
+        )}
       </ul>
     </div>
   );
 };
 
 Inbox.propTypes = {
-  inboxList: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      with_user: PropTypes.string.isRequired,
-      with_user_img: PropTypes.string,
-      last_message_date: PropTypes.string,
-      unread_count: PropTypes.number,
-    }),
-  ).isRequired,
-  lastInboxRef: PropTypes.func.isRequired,
-  inboxLoading: PropTypes.bool.isRequired,
-  setSelectedInboxUser: PropTypes.func.isRequired,
-  selectedInboxUser: PropTypes.string.isRequired,
   isDrawerShown: PropTypes.bool.isRequired,
   setDrawerShown: PropTypes.func.isRequired,
-  searchInbox: PropTypes.string.isRequired,
-  setSearchInbox: PropTypes.func.isRequired,
 };
 
 export default Inbox;

@@ -1,103 +1,187 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
+// components/Conversation.jsx
+import React, { useEffect, useCallback, useRef } from 'react';
 import { useIntl } from '@edx/frontend-platform/i18n';
+import { useDispatch, useSelector } from 'react-redux';
 import Spinner from '../assets/spinner';
 import messages from './messages';
+import {
+  fetchMessages,
+  createMessage as createMessageAction,
+  incrementPageNumber,
+  setIsReplying,
+  setCurrentMessage,
+  clearCurrentMessage,
+} from '../store/slices/messagesSlice';
+import { updateLastMessage, updateUnreadCount } from '../store/slices/inboxSlice';
 
-const Conversation = ({
-  selectedInboxMessages,
-  createMessage,
-  messagesLoading,
-  updateLastMessage,
-  lastMessageRef,
-  selectedInboxUser,
-  loggedinUser,
-}) => {
+const Conversation = () => {
   const intl = useIntl();
-  const [message, setMessage] = useState('');
-  const [isReplying, setReplying] = useState(false);
+  const dispatch = useDispatch();
+  const observer = useRef();
+  const textareaRef = useRef(null);
 
-  const handleSendMessageBtnClick = () => {
-    createMessage(message, setMessage, updateLastMessage, setReplying);
+  const { selectedUser, list: inboxList } = useSelector((state) => state.inbox);
+  const {
+    list: messagesList,
+    loading,
+    hasMore,
+    pageNumber,
+    isReplying,
+    currentMessage,
+  } = useSelector((state) => state.messages);
+  const { currentUser } = useSelector((state) => state.user);
+
+  // Fetch messages when user is selected
+  useEffect(() => {
+    if (selectedUser) {
+      dispatch(fetchMessages({ pageNumber: 1, username: selectedUser }));
+    }
+  }, [selectedUser, dispatch]);
+
+  // Handle pagination
+  useEffect(() => {
+    if (selectedUser && pageNumber > 1) {
+      dispatch(fetchMessages({ pageNumber, username: selectedUser }));
+    }
+  }, [pageNumber, selectedUser, dispatch]);
+
+  // Mark messages as read after 3 seconds
+  useEffect(() => {
+    if (!selectedUser || !inboxList.length) { return; }
+
+    const currentInbox = inboxList.find(
+      (inbox) => inbox.with_user === selectedUser || inbox.withUser === selectedUser,
+    );
+
+    if (currentInbox && currentInbox.unread_count) {
+      const timer = setTimeout(() => {
+        dispatch(updateUnreadCount(currentInbox.id));
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [selectedUser, inboxList, dispatch]);
+
+  // Intersection Observer for infinite scroll
+  const lastMessageRef = useCallback(
+    (node) => {
+      if (loading) { return; }
+      if (observer.current) { observer.current.disconnect(); }
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          dispatch(incrementPageNumber());
+        }
+      });
+
+      if (node) { observer.current.observe(node); }
+    },
+    [loading, hasMore, dispatch],
+  );
+
+  const handleSendMessage = () => {
+    if (!currentMessage.trim()) { return; }
+
+    dispatch(
+      createMessageAction({
+        receiver: selectedUser,
+        message: currentMessage,
+      }),
+    ).then(() => {
+      dispatch(updateLastMessage({ username: selectedUser, message: currentMessage }));
+    });
   };
 
   const handleInputChange = (e) => {
-    setMessage(e.target.value);
+    dispatch(setCurrentMessage(e.target.value));
     e.target.style.height = '5px';
     e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
-  const handleCancelReply = (e) => {
-    setReplying(false);
-    setMessage('');
+  const handleCancelReply = () => {
+    dispatch(clearCurrentMessage());
+  };
+
+  const handleReplyClick = () => {
+    dispatch(setIsReplying(true));
   };
 
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <h2>{intl.formatMessage(messages['messenger.label.inbox'])} / {selectedInboxUser}&nbsp;</h2>
+        <h2>
+          {intl.formatMessage(messages['messenger.label.inbox'])} / {selectedUser}&nbsp;
+        </h2>
       </div>
       <div className="chat">
-        {
-                    isReplying && (
-                    <div className="chat-row">
-                      {
-                                loggedinUser.hasProfileImage ? (
-                                  <img src={loggedinUser.profileImage} alt={loggedinUser.name} />
-                                ) : (
-                                  <span className="img-placeholder" style={{ background: '#a7f9e0' }}>{loggedinUser.profileName}</span>
-                                )
-                            }
-                      <div className="chat-detail">
-                        <div className="new-message">
-                          <textarea
-                            className="new-message-input"
-                            value={message}
-                            placeholder={intl.formatMessage(messages['messenger.placeholder.typeMessage'])}
-                            onChange={handleInputChange}
-                            autoFocus
-                          />
-                          <div className="btn-box">
-                            <button
-                              className="btn btn-primary"
-                              onClick={handleSendMessageBtnClick}
-                              disabled={!message.length}
-                            >{intl.formatMessage(messages['messenger.button.send'])}
-                            </button>
-                            <button
-                              className="btn btn-default"
-                              onClick={(e) => handleCancelReply(e)}
-                            >{intl.formatMessage(messages['messenger.button.close'])}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    )
-                }
-        {
-                    selectedInboxMessages.length > 0 && !messagesLoading && !isReplying && (
-                    <div className="chat-reply">
-                      <button
-                        className="btn btn-default"
-                        onClick={(e) => setReplying(true)}
-                      >{intl.formatMessage(messages['messenger.button.reply'])}
-                      </button>
-                    </div>
-                    )
-                }
-        {selectedInboxMessages && !messagesLoading && selectedInboxMessages.map(
-          (message, index) => {
-            const setRef = (selectedInboxMessages.length === index + 1);
-            const hasProfileImage = message.sender_img.indexOf('default_50') === -1;
-            const profileName = `${message.sender[0]}${message.sender.split(' ')[1] ? message.sender.split(' ')[1][0] : message.sender[1]}`;
+        {isReplying && (
+          <div className="chat-row">
+            {currentUser.hasProfileImage ? (
+              <img src={currentUser.profileImage} alt={currentUser.name} />
+            ) : (
+              <span className="img-placeholder" style={{ background: '#a7f9e0' }}>
+                {currentUser.profileName}
+              </span>
+            )}
+            <div className="chat-detail">
+              <div className="new-message">
+                <textarea
+                  ref={textareaRef}
+                  className="new-message-input"
+                  value={currentMessage}
+                  placeholder={intl.formatMessage(messages['messenger.placeholder.typeMessage'])}
+                  onChange={handleInputChange}
+                  autoFocus
+                />
+                <div className="btn-box">
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleSendMessage}
+                    disabled={!currentMessage.trim().length}
+                  >
+                    {intl.formatMessage(messages['messenger.button.send'])}
+                  </button>
+                  <button className="btn btn-default" onClick={handleCancelReply}>
+                    {intl.formatMessage(messages['messenger.button.close'])}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {messagesList.length > 0 && !loading && !isReplying && (
+          <div className="chat-reply">
+            <button className="btn btn-default" onClick={handleReplyClick}>
+              {intl.formatMessage(messages['messenger.button.reply'])}
+            </button>
+          </div>
+        )}
+
+        {messagesList
+          && !loading
+          && messagesList.map((message, index) => {
+            const isLastItem = messagesList.length === index + 1;
+            const hasProfileImage = message.sender_img?.indexOf('default_50') === -1;
+            const profileName = `${message.sender[0]}${
+              message.sender.split(' ')[1]
+                ? message.sender.split(' ')[1][0]
+                : message.sender[1]
+            }`;
+
             return (
-              <div className="chat-row" key={index} ref={setRef ? lastMessageRef : null}>
-                {
-                                    hasProfileImage
-                                      ? (<img src={message.sender_img} alt={message.sender} />)
-                                      : (<span className="img-placeholder" style={{ background: '#a7f9e0' }}>{profileName}</span>)
-                                }
+              <div
+                className="chat-row"
+                key={index}
+                ref={isLastItem ? lastMessageRef : null}
+              >
+                {hasProfileImage ? (
+                  <img src={message.sender_img} alt={message.sender} />
+                ) : (
+                  <span className="img-placeholder" style={{ background: '#a7f9e0' }}>
+                    {profileName}
+                  </span>
+                )}
                 <div className="chat-detail">
                   <span className="msg-sender">{message.sender}</span>
                   <span className="chat-time">{message.created}</span>
@@ -105,38 +189,12 @@ const Conversation = ({
                 </div>
               </div>
             );
-          },
-        )}
-        {
-                    messagesLoading && (
-                    <Spinner />
-                    )
-                }
+          })}
+
+        {loading && <Spinner />}
       </div>
     </div>
   );
-};
-
-Conversation.propTypes = {
-  selectedInboxMessages: PropTypes.arrayOf(
-    PropTypes.shape({
-      sender: PropTypes.string.isRequired,
-      sender_img: PropTypes.string,
-      created: PropTypes.string,
-      message: PropTypes.string.isRequired,
-    }),
-  ).isRequired,
-  createMessage: PropTypes.func.isRequired,
-  messagesLoading: PropTypes.bool.isRequired,
-  updateLastMessage: PropTypes.func.isRequired,
-  lastMessageRef: PropTypes.func.isRequired,
-  selectedInboxUser: PropTypes.string.isRequired,
-  loggedinUser: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    profileName: PropTypes.string.isRequired,
-    hasProfileImage: PropTypes.bool.isRequired,
-    profileImage: PropTypes.string,
-  }).isRequired,
 };
 
 export default Conversation;

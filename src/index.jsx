@@ -1,5 +1,15 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
+
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min';
+
+import $ from 'jquery';
+
+import 'react-toastify/dist/ReactToastify.css';
+
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 import {
   APP_INIT_ERROR, APP_READY, subscribe, initialize,
@@ -11,13 +21,18 @@ import Header from '@edx/frontend-component-header';
 import { FooterSlot } from '@edx/frontend-component-footer';
 import messages from './i18n';
 import ExamplePage from './example/ExamplePage';
+
+import store from './messenger/store';
 import MessengerContent from './messenger/MessengerContent';
 
 import './index.scss';
 
+window.jQuery = $;
+window.$ = $;
+
 subscribe(APP_READY, () => {
   ReactDOM.render(
-    <AppProvider>
+    <AppProvider store={store}>
       <Header />
       <MessengerContent />
       <FooterSlot />

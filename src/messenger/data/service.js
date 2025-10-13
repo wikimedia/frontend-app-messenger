@@ -1,6 +1,6 @@
 import { ensureConfig, getConfig } from '@edx/frontend-platform';
 import { getAuthenticatedHttpClient as getHttpClient } from '@edx/frontend-platform/auth';
-import { camelCaseObject, snakeCaseObject } from '../utils';
+import { camelCaseObject, snakeCaseObject } from './utils';
 
 ensureConfig(['LMS_BASE_URL']);
 

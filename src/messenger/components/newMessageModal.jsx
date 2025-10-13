@@ -1,24 +1,66 @@
+// components/NewMessageModal.jsx
 import React, { useState } from 'react';
-import PropTypes from 'prop-types';
 import { useIntl } from '@edx/frontend-platform/i18n';
+import { useDispatch, useSelector } from 'react-redux';
 import Multiselect from 'multiselect-react-dropdown';
-import useUserSearch from '../hooks/useUserSearch';
 import messages from './messages';
+import { searchUsers, clearSearchResults } from '../store/slices/userSlice';
+import { createGroupMessages } from '../store/slices/inboxSlice';
+import { addMessageToList } from '../store/slices/messagesSlice';
 
-const NewMessageModal = ({ createGroupMessages }) => {
+const NewMessageModal = () => {
   const intl = useIntl();
-  const [newMessageUsers, setNewMessageUsers] = useState([]);
-  const [groupNewMessage, setGroupNewMessage] = useState('');
-  const [newMessageSelectedUsers, setNewMessageSelectedUsers] = useState([]);
-  const { fetchUsers } = useUserSearch();
+  const dispatch = useDispatch();
+  const [groupMessage, setGroupMessage] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState([]);
+
+  const { searchResults } = useSelector((state) => state.user);
+  const { selectedUser } = useSelector((state) => state.inbox);
+  const { currentUser } = useSelector((state) => state.user);
 
   const handleSearch = (query) => {
-    fetchUsers(query, setNewMessageUsers);
+    if (query) {
+      dispatch(searchUsers(query));
+    }
   };
 
-  const handleNewMessageBtnClick = (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
-    createGroupMessages(groupNewMessage, setGroupNewMessage, newMessageSelectedUsers);
+
+    if (!groupMessage.trim() || selectedUsers.length === 0) {
+      return;
+    }
+
+    const receivers = selectedUsers.map((user) => user.id);
+
+    dispatch(createGroupMessages({ receivers, message: groupMessage })).then(() => {
+      // Check if conversation is opened with any of the selected users
+      const isConversationOpened = selectedUsers.some(
+        (user) => user.username === selectedUser,
+      );
+
+      if (isConversationOpened) {
+        dispatch(
+          addMessageToList({
+            sender: currentUser.username,
+            sender_img: currentUser.profileImage || '',
+            created: 'now',
+            message: groupMessage,
+          }),
+        );
+      }
+
+      // Reset form
+      setGroupMessage('');
+      setSelectedUsers([]);
+      dispatch(clearSearchResults());
+
+      // Close modal
+      const modalElement = document.getElementById('messageModalCenter');
+      if (modalElement) {
+        window.jQuery(modalElement).modal('hide');
+      }
+    });
   };
 
   return (
@@ -33,7 +75,7 @@ const NewMessageModal = ({ createGroupMessages }) => {
       >
         <div className="modal-dialog modal-dialog-centered modal-lg" role="document">
           <div className="modal-content">
-            <form onSubmit={(e) => handleNewMessageBtnClick(e)}>
+            <form onSubmit={handleSubmit}>
               <div className="modal-header">
                 <h5 className="modal-title" id="messageModalLongTitle">
                   {intl.formatMessage(messages['messenger.label.newMessage'])}
@@ -45,22 +87,25 @@ const NewMessageModal = ({ createGroupMessages }) => {
               <div className="modal-body">
                 <label>{intl.formatMessage(messages['messenger.label.users'])}</label>
                 <Multiselect
-                  options={newMessageUsers}
+                  options={searchResults}
                   displayValue="username"
-                  onSearch={(data) => handleSearch(data)}
-                  selectedValues={newMessageSelectedUsers}
-                  onSelect={setNewMessageSelectedUsers}
+                  onSearch={handleSearch}
+                  selectedValues={selectedUsers}
+                  onSelect={setSelectedUsers}
+                  onRemove={setSelectedUsers}
                   placeholder={intl.formatMessage(messages['messenger.placeholder.select'])}
                 />
                 <div className="form-group">
-                  <label htmlFor="group-message">{intl.formatMessage(messages['messenger.label.message'])}</label>
+                  <label htmlFor="group-message">
+                    {intl.formatMessage(messages['messenger.label.message'])}
+                  </label>
                   <textarea
                     className="form-control"
                     id="group-message"
                     placeholder={intl.formatMessage(messages['messenger.placeholder.enterMessage'])}
                     required
-                    onChange={(e) => setGroupNewMessage(e.target.value)}
-                    value={groupNewMessage}
+                    onChange={(e) => setGroupMessage(e.target.value)}
+                    value={groupMessage}
                   />
                 </div>
               </div>
@@ -78,10 +123,6 @@ const NewMessageModal = ({ createGroupMessages }) => {
       </div>
     </div>
   );
-};
-
-NewMessageModal.propTypes = {
-  createGroupMessages: PropTypes.func.isRequired,
 };
 
 export default NewMessageModal;
