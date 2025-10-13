@@ -50,10 +50,10 @@ const Conversation = () => {
     if (!selectedUser || !inboxList.length) { return; }
 
     const currentInbox = inboxList.find(
-      (inbox) => inbox.with_user === selectedUser || inbox.withUser === selectedUser,
+      (inbox) => inbox.withUser === selectedUser,
     );
 
-    if (currentInbox && currentInbox.unread_count) {
+    if (currentInbox && currentInbox.unreadCount) {
       const timer = setTimeout(() => {
         dispatch(updateUnreadCount(currentInbox.id));
       }, 3000);
