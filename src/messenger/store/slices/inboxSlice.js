@@ -57,88 +57,129 @@ const inboxSlice = createSlice({
   },
   reducers: {
     setSelectedUser: (state, action) => {
-      state.selectedUser = action.payload;
+      return {
+        ...state,
+        selectedUser: action.payload,
+      };
     },
     setSearchQuery: (state, action) => {
-      state.searchQuery = action.payload;
-      state.pageNumber = 1;
+      return {
+        ...state,
+        searchQuery: action.payload,
+        pageNumber: 1,
+      };
     },
     incrementPageNumber: (state) => {
-      state.pageNumber += 1;
+      return {
+        ...state,
+        pageNumber: state.pageNumber + 1,
+      };
     },
     resetPageNumber: (state) => {
-      state.pageNumber = 1;
+      return {
+        ...state,
+        pageNumber: 1,
+      };
     },
     updateLastMessage: (state, action) => {
       const { username, message } = action.payload;
-      const inbox = state.list.find(
-        (item) => item.with_user === username || item.withUser === username,
-      );
-      if (inbox) {
-        inbox.last_message = message.length > 30 ? `${message.substring(0, 30)}...` : message;
-      }
+      const updatedList = state.list.map((item) => {
+        if (item.with_user === username || item.withUser === username) {
+          return {
+            ...item,
+            last_message: message.length > 30 ? `${message.substring(0, 30)}...` : message,
+          };
+        }
+        return item;
+      });
+
+      return {
+        ...state,
+        list: updatedList,
+      };
     },
     updateInboxList: (state, action) => {
       const updatedInbox = action.payload;
       const updatedInboxIds = updatedInbox.map((inbox) => inbox.id);
-      state.list = [
-        ...updatedInbox,
-        ...state.list.filter((inbox) => !updatedInboxIds.includes(inbox.id)),
-      ];
+      const filteredList = state.list.filter((inbox) => !updatedInboxIds.includes(inbox.id));
+
+      return {
+        ...state,
+        list: [...updatedInbox, ...filteredList],
+      };
     },
   },
   extraReducers: (builder) => {
     builder
       // Fetch Inbox List
       .addCase(fetchInboxList.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        return {
+          ...state,
+          loading: true,
+          error: null,
+        };
       })
       .addCase(fetchInboxList.fulfilled, (state, action) => {
         const { data, pageNumber } = action.payload;
 
         if (pageNumber === 1) {
-          state.list = data.results;
-          if (data.results.length) {
-            state.selectedUser = data.results[0].withUser || data.results[0].with_user;
-          }
-        } else {
-          state.list = [...state.list, ...data.results];
+          return {
+            ...state,
+            list: data.results,
+            selectedUser: data.results.length ? (data.results[0].withUser
+                || data.results[0].with_user) : state.selectedUser,
+            hasMore: pageNumber < (data.numPages || data.num_pages),
+            loading: false,
+          };
         }
 
-        state.hasMore = pageNumber < (data.numPages || data.num_pages);
-        state.loading = false;
+        return {
+          ...state,
+          list: [...state.list, ...data.results],
+          hasMore: pageNumber < (data.numPages || data.num_pages),
+          loading: false,
+        };
       })
       .addCase(fetchInboxList.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
         toast.error('Failed to load conversations');
+        return {
+          ...state,
+          loading: false,
+          error: action.payload,
+        };
       })
 
       // Update Unread Count
       .addCase(updateUnreadCount.fulfilled, (state, action) => {
         const updatedInbox = action.payload;
-        const index = state.list.findIndex((inbox) => inbox.id === updatedInbox.id);
-        if (index !== -1) {
-          state.list[index] = updatedInbox;
-        }
+        const updatedList = state.list.map((inbox) =>
+          inbox.id === updatedInbox.id ? updatedInbox : inbox);
+
+        return {
+          ...state,
+          list: updatedList,
+        };
       })
       .addCase(updateUnreadCount.rejected, (state) => {
         toast.error('Failed to mark messages as read');
+        return state;
       })
 
       // Create Group Messages
       .addCase(createGroupMessages.fulfilled, (state, action) => {
         const updatedInbox = action.payload;
         const updatedInboxIds = updatedInbox.map((inbox) => inbox.id);
-        state.list = [
-          ...updatedInbox,
-          ...state.list.filter((inbox) => !updatedInboxIds.includes(inbox.id)),
-        ];
+        const filteredList = state.list.filter((inbox) => !updatedInboxIds.includes(inbox.id));
+
         toast.success('Messages sent successfully');
+        return {
+          ...state,
+          list: [...updatedInbox, ...filteredList],
+        };
       })
       .addCase(createGroupMessages.rejected, (state) => {
         toast.error('Failed to send messages');
+        return state;
       });
   },
 });

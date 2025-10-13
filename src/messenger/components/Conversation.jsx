@@ -162,7 +162,7 @@ const Conversation = () => {
           && !loading
           && messagesList.map((message, index) => {
             const isLastItem = messagesList.length === index + 1;
-            const hasProfileImage = message.sender_img?.indexOf('default_50') === -1;
+            const hasProfileImage = message.senderImg?.indexOf('default_50') === -1;
             const profileName = `${message.sender[0]}${
               message.sender.split(' ')[1]
                 ? message.sender.split(' ')[1][0]
@@ -176,7 +176,7 @@ const Conversation = () => {
                 ref={isLastItem ? lastMessageRef : null}
               >
                 {hasProfileImage ? (
-                  <img src={message.sender_img} alt={message.sender} />
+                  <img src={message.senderImg} alt={message.sender} />
                 ) : (
                   <span className="img-placeholder" style={{ background: '#a7f9e0' }}>
                     {profileName}

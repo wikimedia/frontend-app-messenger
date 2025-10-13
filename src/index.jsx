@@ -20,9 +20,8 @@ import ReactDOM from 'react-dom';
 import Header from '@edx/frontend-component-header';
 import { FooterSlot } from '@edx/frontend-component-footer';
 import messages from './i18n';
-import ExamplePage from './example/ExamplePage';
 
-import store from './messenger/store';
+import { store } from './messenger/store';
 import MessengerContent from './messenger/MessengerContent';
 
 import './index.scss';

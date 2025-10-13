@@ -135,15 +135,15 @@ const Inbox = ({ isDrawerShown, setDrawerShown }) => {
           <span>{intl.formatMessage(messages['messenger.inbox.noConversation'])}</span>
         ) : (
           inboxList.map((inbox, index) => {
-            const username = inbox.with_user || inbox.withUser;
+            const username = inbox.withUser
 
             // Skip if no username
             if (!username) { return null; }
 
             const isLastItem = inboxList.length === index + 1;
             const isActive = selectedUser === username;
-            const unreadClass = inbox.unread_count ? 'unread' : '';
-            const hasProfileImage = inbox.with_user_img?.indexOf('default_50') === -1;
+            const unreadClass = inbox.unreadCount ? 'unread' : '';
+            const hasProfileImage = inbox.withUserImg?.indexOf('default_50') === -1;
 
             // Generate initials - simple and safe
             const getInitials = (name) => {
@@ -161,10 +161,10 @@ const Inbox = ({ isDrawerShown, setDrawerShown }) => {
                 key={inbox.id}
                 className={`inbox-message ${isActive ? 'active' : ''} ${unreadClass}`}
                 ref={isLastItem ? lastInboxRef : null}
-                onClick={() => handleInboxClick(inbox.with_user)}
+                onClick={() => handleInboxClick(inbox.withUser)}
               >
                 {hasProfileImage ? (
-                  <img src={inbox.with_user_img} alt={inbox.with_user} />
+                  <img src={inbox.withUserImg} alt={inbox.withUser} />
                 ) : (
                   <span className="img-placeholder" style={{ background: '#a7f9e0' }}>
                     {profileName}
@@ -172,12 +172,12 @@ const Inbox = ({ isDrawerShown, setDrawerShown }) => {
                 )}
                 <div className="about">
                   <div className="title">
-                    <span className="date">{renderDate(inbox.last_message_date)}</span>
-                    <span className="name">{inbox.with_user}</span>
+                    <span className="date">{renderDate(inbox.lastMessageDate)}</span>
+                    <span className="name">{inbox.withUser}</span>
                   </div>
                 </div>
                 <span className="badge rounded-pill bg-danger unread-count">
-                  {inbox.unread_count || ''}
+                  {inbox.unreadCount || ''}
                 </span>
               </li>
             );

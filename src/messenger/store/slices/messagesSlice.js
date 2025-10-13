@@ -43,64 +43,85 @@ const messagesSlice = createSlice({
     currentMessage: '',
   },
   reducers: {
-    incrementPageNumber: (state) => {
-      state.pageNumber += 1;
-    },
-    resetMessages: (state) => {
-      state.list = [];
-      state.pageNumber = 1;
-      state.hasMore = false;
-      state.isReplying = false;
-      state.currentMessage = '';
-    },
-    setIsReplying: (state, action) => {
-      state.isReplying = action.payload;
-    },
-    setCurrentMessage: (state, action) => {
-      state.currentMessage = action.payload;
-    },
-    addMessageToList: (state, action) => {
-      state.list = [action.payload, ...state.list];
-    },
-    clearCurrentMessage: (state) => {
-      state.currentMessage = '';
-      state.isReplying = false;
-    },
+    incrementPageNumber: (state) => ({
+      ...state,
+      pageNumber: state.pageNumber + 1,
+    }),
+    resetMessages: (state) => ({
+      ...state,
+      list: [],
+      pageNumber: 1,
+      hasMore: false,
+      isReplying: false,
+      currentMessage: '',
+    }),
+    setIsReplying: (state, action) => ({
+      ...state,
+      isReplying: action.payload,
+    }),
+    setCurrentMessage: (state, action) => ({
+      ...state,
+      currentMessage: action.payload,
+    }),
+    addMessageToList: (state, action) => ({
+      ...state,
+      list: [action.payload, ...state.list],
+    }),
+    clearCurrentMessage: (state) => ({
+      ...state,
+      currentMessage: '',
+      isReplying: false,
+    }),
   },
   extraReducers: (builder) => {
     builder
       // Fetch Messages
-      .addCase(fetchMessages.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      .addCase(fetchMessages.pending, (state) => ({
+        ...state,
+        loading: true,
+        error: null,
+      }))
       .addCase(fetchMessages.fulfilled, (state, action) => {
         const { data, pageNumber } = action.payload;
 
         if (pageNumber === 1) {
-          state.list = data.results;
-        } else {
-          state.list = [...state.list, ...data.results];
+          return {
+            ...state,
+            list: data.results,
+            hasMore: pageNumber < (data.numPages || data.num_pages),
+            loading: false,
+          };
         }
 
-        state.hasMore = pageNumber < (data.numPages || data.num_pages);
-        state.loading = false;
+        return {
+          ...state,
+          list: [...state.list, ...data.results],
+          hasMore: pageNumber < (data.numPages || data.num_pages),
+          loading: false,
+        };
       })
       .addCase(fetchMessages.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
         toast.error('Failed to load conversation');
+        return {
+          ...state,
+          loading: false,
+          error: action.payload,
+        };
       })
 
       // Create Message
       .addCase(createMessage.fulfilled, (state, action) => {
-        state.list = [action.payload, ...state.list];
-        state.currentMessage = '';
-        state.isReplying = false;
         toast.success('Message sent successfully');
+        return {
+          ...state,
+          list: [action.payload, ...state.list],
+          currentMessage: '',
+          isReplying: false,
+        };
       })
       .addCase(createMessage.rejected, (state) => {
         toast.error('Failed to send message');
+        return state;
       });
   },
 });

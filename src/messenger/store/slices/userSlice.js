@@ -50,7 +50,10 @@ const userSlice = createSlice({
   },
   reducers: {
     clearSearchResults: (state) => {
-      state.searchResults = [];
+      return {
+        ...state,
+        searchResults: [],
+      };
     },
   },
   extraReducers: (builder) => {
@@ -59,34 +62,50 @@ const userSlice = createSlice({
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         const { profileData, username } = action.payload;
 
-        state.currentUser = {
-          username,
-          name: username,
-          profileName: `${username[0]}${
-            username.split(' ')[1] ? username.split(' ')[1][0] : username[1] || ''
-          }`,
-          hasProfileImage: profileData?.profileImage?.hasImage || false,
-          profileImage: profileData?.profileImage?.imageUrlFull || '',
+        return {
+          ...state,
+          currentUser: {
+            username,
+            name: username,
+            profileName: `${username[0]}${
+              username.split(' ')[1] ? username.split(' ')[1][0] : username[1] || ''
+            }`,
+            hasProfileImage: profileData?.profileImage?.hasImage || false,
+            profileImage: profileData?.profileImage?.imageUrlFull || '',
+          },
         };
       })
       .addCase(fetchUserProfile.rejected, (state) => {
-        console.error('Failed to fetch profile image');
+        // Log error without using console
+        toast.error('Failed to fetch profile image');
+        return state;
       })
 
       // Search Users
       .addCase(searchUsers.pending, (state) => {
-        state.loading = true;
+        return {
+          ...state,
+          loading: true,
+        };
       })
       .addCase(searchUsers.fulfilled, (state, action) => {
-        state.searchResults = action.payload.results.map((user) => ({
+        const mappedResults = action.payload.results.map((user) => ({
           id: user.username,
           username: user.username,
         }));
-        state.loading = false;
+
+        return {
+          ...state,
+          searchResults: mappedResults,
+          loading: false,
+        };
       })
       .addCase(searchUsers.rejected, (state) => {
-        state.loading = false;
         toast.error('Failed to search users');
+        return {
+          ...state,
+          loading: false,
+        };
       });
   },
 });
