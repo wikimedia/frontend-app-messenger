@@ -1,4 +1,3 @@
-// store/index.js
 import { configureStore } from '@reduxjs/toolkit';
 import inboxReducer from './slices/inboxSlice';
 import messagesReducer from './slices/messagesSlice';

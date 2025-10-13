@@ -1,4 +1,3 @@
-// store/slices/userSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import { getAuthenticatedUser } from '@edx/frontend-platform/auth';
@@ -49,12 +48,10 @@ const userSlice = createSlice({
     error: null,
   },
   reducers: {
-    clearSearchResults: (state) => {
-      return {
-        ...state,
-        searchResults: [],
-      };
-    },
+    clearSearchResults: (state) => ({
+      ...state,
+      searchResults: [],
+    }),
   },
   extraReducers: (builder) => {
     builder
@@ -82,12 +79,10 @@ const userSlice = createSlice({
       })
 
       // Search Users
-      .addCase(searchUsers.pending, (state) => {
-        return {
-          ...state,
-          loading: true,
-        };
-      })
+      .addCase(searchUsers.pending, (state) => ({
+        ...state,
+        loading: true,
+      }))
       .addCase(searchUsers.fulfilled, (state, action) => {
         const mappedResults = action.payload.results.map((user) => ({
           id: user.username,

@@ -1,4 +1,3 @@
-// components/Conversation.jsx
 import React, { useEffect, useCallback, useRef } from 'react';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { useDispatch, useSelector } from 'react-redux';
@@ -47,7 +46,7 @@ const Conversation = () => {
 
   // Mark messages as read after 3 seconds
   useEffect(() => {
-    if (!selectedUser || !inboxList.length) { return; }
+    if (!selectedUser || !inboxList.length) { return () => {}; }
 
     const currentInbox = inboxList.find(
       (inbox) => inbox.withUser === selectedUser,
@@ -60,9 +59,10 @@ const Conversation = () => {
 
       return () => clearTimeout(timer);
     }
+    return () => {};
   }, [selectedUser, inboxList, dispatch]);
 
-  // Intersection Observer for infinite scroll
+  // eslint-disable-next-line consistent-return
   const lastMessageRef = useCallback(
     (node) => {
       if (loading) { return; }
@@ -131,17 +131,23 @@ const Conversation = () => {
                   value={currentMessage}
                   placeholder={intl.formatMessage(messages['messenger.placeholder.typeMessage'])}
                   onChange={handleInputChange}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                 />
                 <div className="btn-box">
                   <button
+                    type="button"
                     className="btn btn-primary"
                     onClick={handleSendMessage}
                     disabled={!currentMessage.trim().length}
                   >
                     {intl.formatMessage(messages['messenger.button.send'])}
                   </button>
-                  <button className="btn btn-default" onClick={handleCancelReply}>
+                  <button
+                    type="button"
+                    className="btn btn-default"
+                    onClick={handleCancelReply}
+                  >
                     {intl.formatMessage(messages['messenger.button.close'])}
                   </button>
                 </div>
@@ -152,7 +158,11 @@ const Conversation = () => {
 
         {messagesList.length > 0 && !loading && !isReplying && (
           <div className="chat-reply">
-            <button className="btn btn-default" onClick={handleReplyClick}>
+            <button
+              type="button"
+              className="btn btn-default"
+              onClick={handleReplyClick}
+            >
               {intl.formatMessage(messages['messenger.button.reply'])}
             </button>
           </div>
@@ -172,7 +182,7 @@ const Conversation = () => {
             return (
               <div
                 className="chat-row"
-                key={index}
+                key={message.id || index}
                 ref={isLastItem ? lastMessageRef : null}
               >
                 {hasProfileImage ? (

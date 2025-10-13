@@ -1,4 +1,6 @@
-// components/Inbox.jsx
+/* eslint-disable jsx-a11y/click-events-have-key-events,
+jsx-a11y/no-static-element-interactions,
+jsx-a11y/no-noninteractive-element-interactions */
 import React, { useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useIntl } from '@edx/frontend-platform/i18n';
@@ -34,6 +36,7 @@ const Inbox = ({ isDrawerShown, setDrawerShown }) => {
   }, [dispatch]);
 
   // Handle search with debounce
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (searchQuery !== '') {
       const delayDebounceFetch = setTimeout(() => {
@@ -45,9 +48,11 @@ const Inbox = ({ isDrawerShown, setDrawerShown }) => {
     } if (searchQuery === '' && pageNumber === 1) {
       dispatch(fetchInboxList({ pageNumber: 1, searchQuery: '' }));
     }
+    return () => {};
   }, [searchQuery, dispatch]);
 
   // Handle pagination
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (pageNumber > 1) {
       dispatch(fetchInboxList({ pageNumber, searchQuery }));
@@ -103,6 +108,7 @@ const Inbox = ({ isDrawerShown, setDrawerShown }) => {
             {intl.formatMessage(messages['messenger.label.inbox'])}
           </strong>
           <button
+            type="button"
             className="btn btn-primary btn-lg start-new-msg-btn"
             data-toggle="modal"
             data-target="#messageModalCenter"
@@ -135,7 +141,7 @@ const Inbox = ({ isDrawerShown, setDrawerShown }) => {
           <span>{intl.formatMessage(messages['messenger.inbox.noConversation'])}</span>
         ) : (
           inboxList.map((inbox, index) => {
-            const username = inbox.withUser
+            const username = inbox.withUser;
 
             // Skip if no username
             if (!username) { return null; }

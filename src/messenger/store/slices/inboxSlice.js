@@ -1,4 +1,3 @@
-// store/slices/inboxSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import {
@@ -56,38 +55,31 @@ const inboxSlice = createSlice({
     error: null,
   },
   reducers: {
-    setSelectedUser: (state, action) => {
-      return {
-        ...state,
-        selectedUser: action.payload,
-      };
-    },
-    setSearchQuery: (state, action) => {
-      return {
-        ...state,
-        searchQuery: action.payload,
-        pageNumber: 1,
-      };
-    },
-    incrementPageNumber: (state) => {
-      return {
-        ...state,
-        pageNumber: state.pageNumber + 1,
-      };
-    },
-    resetPageNumber: (state) => {
-      return {
-        ...state,
-        pageNumber: 1,
-      };
-    },
+    setSelectedUser: (state, action) => ({
+      ...state,
+      selectedUser: action.payload,
+    }),
+    setSearchQuery: (state, action) => ({
+      ...state,
+      searchQuery: action.payload,
+      pageNumber: 1,
+    }),
+    incrementPageNumber: (state) => ({
+      ...state,
+      pageNumber: state.pageNumber + 1,
+    }),
+    resetPageNumber: (state) => ({
+      ...state,
+      pageNumber: 1,
+    }),
     updateLastMessage: (state, action) => {
       const { username, message } = action.payload;
       const updatedList = state.list.map((item) => {
         if (item.with_user === username || item.withUser === username) {
           return {
             ...item,
-            last_message: message.length > 30 ? `${message.substring(0, 30)}...` : message,
+            last_message:
+              message.length > 30 ? `${message.substring(0, 30)}...` : message,
           };
         }
         return item;
@@ -112,13 +104,11 @@ const inboxSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Fetch Inbox List
-      .addCase(fetchInboxList.pending, (state) => {
-        return {
-          ...state,
-          loading: true,
-          error: null,
-        };
-      })
+      .addCase(fetchInboxList.pending, (state) => ({
+        ...state,
+        loading: true,
+        error: null,
+      }))
       .addCase(fetchInboxList.fulfilled, (state, action) => {
         const { data, pageNumber } = action.payload;
 
@@ -126,8 +116,9 @@ const inboxSlice = createSlice({
           return {
             ...state,
             list: data.results,
-            selectedUser: data.results.length ? (data.results[0].withUser
-                || data.results[0].with_user) : state.selectedUser,
+            selectedUser: data.results.length
+              ? (data.results[0].withUser || data.results[0].with_user)
+              : state.selectedUser,
             hasMore: pageNumber < (data.numPages || data.num_pages),
             loading: false,
           };
@@ -152,8 +143,7 @@ const inboxSlice = createSlice({
       // Update Unread Count
       .addCase(updateUnreadCount.fulfilled, (state, action) => {
         const updatedInbox = action.payload;
-        const updatedList = state.list.map((inbox) =>
-          inbox.id === updatedInbox.id ? updatedInbox : inbox);
+        const updatedList = state.list.map((inbox) => (inbox.id === updatedInbox.id ? updatedInbox : inbox));
 
         return {
           ...state,

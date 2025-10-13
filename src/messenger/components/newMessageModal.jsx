@@ -1,4 +1,3 @@
-// components/NewMessageModal.jsx
 import React, { useState } from 'react';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { useDispatch, useSelector } from 'react-redux';
@@ -85,7 +84,10 @@ const NewMessageModal = () => {
                 </button>
               </div>
               <div className="modal-body">
-                <label>{intl.formatMessage(messages['messenger.label.users'])}</label>
+                {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+                <label>
+                  {intl.formatMessage(messages['messenger.label.users'])}
+                </label>
                 <Multiselect
                   options={searchResults}
                   displayValue="username"
