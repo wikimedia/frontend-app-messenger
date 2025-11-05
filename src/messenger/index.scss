@@ -1,8 +1,14 @@
 $baseline: 20px !default;
-$theme-blue: #36c;
+$theme-blue: #0e65c0;
 
 html {
     font-size: 100%;
+}
+
+div {
+    &#root {
+      position: static;
+    }
 }
 
 .messenger-dashboard {
@@ -75,7 +81,7 @@ html {
         position: fixed;
         transform: translateX(-100%);
         background: #fff;
-        z-index: 9999;
+        z-index: 1001;
         left: 0;
         top: 0;
         height: 100%;
