@@ -116,7 +116,7 @@ const inboxSlice = createSlice({
           return {
             ...state,
             list: data.results,
-            selectedUser: data.results.length
+            selectedUser: data?.results?.length
               ? (data.results[0].withUser || data.results[0].with_user)
               : state.selectedUser,
             hasMore: pageNumber < (data.numPages || data.num_pages),

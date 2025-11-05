@@ -9,8 +9,6 @@ import $ from 'jquery';
 
 import 'react-toastify/dist/ReactToastify.css';
 
-import '@fortawesome/fontawesome-free/css/all.min.css';
-
 import {
   APP_INIT_ERROR, APP_READY, subscribe, initialize,
 } from '@edx/frontend-platform';
