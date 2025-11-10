@@ -137,7 +137,7 @@ const Inbox = ({ isDrawerShown, setDrawerShown }) => {
       </div>
       <ul className="inbox-list">
         {loading && pageNumber === 1 && <Spinner />}
-        {!inboxList.length && !loading ? (
+        {inboxList.length === 0 && !loading ? (
           <span>{intl.formatMessage(messages['messenger.inbox.noConversation'])}</span>
         ) : (
           inboxList.map((inbox, index) => {
