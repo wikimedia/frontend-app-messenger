@@ -14,7 +14,7 @@ function processAndThrowError(error, errorDataProcessor) {
   }
 }
 
-const BASE_URL = `${getConfig().LMS_BASE_URL}/messenger/api/v0`;
+export const getBaseURL = () => `${getConfig().LMS_BASE_URL}/messenger/api/v0`;
 
 /**
  * Create a single message
@@ -22,7 +22,7 @@ const BASE_URL = `${getConfig().LMS_BASE_URL}/messenger/api/v0`;
 export async function createMessageService(payload) {
   const processedParams = snakeCaseObject(payload);
   const { data } = await getHttpClient()
-    .post(`${BASE_URL}/message/`, processedParams)
+    .post(`${getBaseURL()}/message/`, processedParams)
     .catch((error) => processAndThrowError(error, camelCaseObject));
   return camelCaseObject(data);
 }
@@ -33,7 +33,7 @@ export async function createMessageService(payload) {
 export async function createGroupMessagesService(payload) {
   const processedParams = snakeCaseObject(payload);
   const { data } = await getHttpClient()
-    .post(`${BASE_URL}/bulk_message/`, processedParams)
+    .post(`${getBaseURL()}/bulk_message/`, processedParams)
     .catch((error) => processAndThrowError(error, camelCaseObject));
   return camelCaseObject(data);
 }
@@ -43,7 +43,7 @@ export async function createGroupMessagesService(payload) {
  */
 export async function updateUnreadCountService(inboxId) {
   const { data } = await getHttpClient()
-    .patch(`${BASE_URL}/inbox/${inboxId}/`, snakeCaseObject({ unread_count: 0 }))
+    .patch(`${getBaseURL()}/inbox/${inboxId}/`, snakeCaseObject({ unread_count: 0 }))
     .catch((error) => processAndThrowError(error, camelCaseObject));
   return camelCaseObject(data);
 }
@@ -53,7 +53,7 @@ export async function updateUnreadCountService(inboxId) {
  */
 export async function fetchInboxListService(page, search = '') {
   const { data } = await getHttpClient()
-    .get(`${BASE_URL}/inbox/?page=${page}&search=${search}`)
+    .get(`${getBaseURL()}/inbox/?page=${page}&search=${search}`)
     .catch((error) => processAndThrowError(error, camelCaseObject));
   return camelCaseObject(data);
 }
@@ -63,7 +63,7 @@ export async function fetchInboxListService(page, search = '') {
  */
 export async function fetchSelectedInboxMessagesService(page, withUser) {
   const { data } = await getHttpClient()
-    .get(`${BASE_URL}/conversation/?page=${page}&with_user=${withUser}`)
+    .get(`${getBaseURL()}/conversation/?page=${page}&with_user=${withUser}`)
     .catch((error) => processAndThrowError(error, camelCaseObject));
   return camelCaseObject(data);
 }
@@ -73,7 +73,7 @@ export async function fetchSelectedInboxMessagesService(page, withUser) {
  */
 export async function fetchUsersService(query) {
   const { data } = await getHttpClient()
-    .get(`${BASE_URL}/user/?search=${query}`)
+    .get(`${getBaseURL()}/user/?search=${query}`)
     .catch((error) => processAndThrowError(error, camelCaseObject));
   return camelCaseObject(data);
 }
