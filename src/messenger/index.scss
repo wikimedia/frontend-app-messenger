@@ -5,6 +5,10 @@ html {
     font-size: 100%;
 }
 
+.fa {
+    font-family: FontAwesome !important;
+}
+
 div {
     &#root {
       position: static;
@@ -647,4 +651,8 @@ div {
             outline: none;
         }
     }
+}
+
+.modal-content {
+    overflow: auto;
 }
