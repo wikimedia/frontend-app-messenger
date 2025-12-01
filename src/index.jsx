@@ -13,7 +13,7 @@ import {
   APP_INIT_ERROR, APP_READY, subscribe, initialize,
 } from '@edx/frontend-platform';
 import { AppProvider, ErrorPage } from '@edx/frontend-platform/react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 
 import Header from '@edx/frontend-component-header';
 import { FooterSlot } from '@edx/frontend-component-footer';
@@ -27,19 +27,19 @@ import './index.scss';
 window.jQuery = $;
 window.$ = $;
 
+const rootNode = createRoot(document.getElementById('root'));
 subscribe(APP_READY, () => {
-  ReactDOM.render(
+  rootNode.render(
     <AppProvider store={store}>
       <Header />
       <MessengerContent />
       <FooterSlot />
     </AppProvider>,
-    document.getElementById('root'),
   );
 });
 
 subscribe(APP_INIT_ERROR, (error) => {
-  ReactDOM.render(<ErrorPage message={error.message} />, document.getElementById('root'));
+  rootNode.render(<ErrorPage message={error.message} />);
 });
 
 initialize({
