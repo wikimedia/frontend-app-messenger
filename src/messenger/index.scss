@@ -107,7 +107,8 @@ div {
             height: auto;
             transform: translateX(0);
             transition: none;
-             [dir="ltr"] & {
+             [dir="ltr"] &,
+             [dir="rtl"] & {
                 transform: translateX(0);
             }
         }
